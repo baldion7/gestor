@@ -8,7 +8,7 @@ type CutSize struct {
 	Quantity        uint64    `gorm:"not null"`
 	ArrivalQuantity uint64    `gorm:"not null"`
 	ColorId         uint64    `gorm:"not null"`
-	Color           *Color    `gorm:"foreignKey:ColorId;references:Id"`
+	Color           *Color    `gorm:"foreignKey:ColorId;references:Id;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
 	CreatedAt       time.Time `gorm:"autoCreateTime"`
 	UpdatedAt       time.Time `gorm:"autoUpdateTime"`
 }

@@ -4,7 +4,6 @@ import (
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"net/http"
 )
 
@@ -27,7 +26,6 @@ func GetCarvingByID(c *gin.Context) {
 }
 
 func CreateCarving(c *gin.Context) {
-	var requestData map[string]interface{}
 
 	// Obtener los datos del carvings del cuerpo de la solicitud HTTP
 	var CarvingRequest struct {
@@ -36,16 +34,15 @@ func CreateCarving(c *gin.Context) {
 		Email              string  `json:"email" binding:"required"`
 		Phone              string  `json:"phone" binding:"required"`
 		Address            string  `json:"address" binding:"required"`
-		ProductionCapacity string  `json:"productionCapacity" binding:"required"`
+		ProductionCapacity uint64  `json:"productionCapacity" binding:"required"`
 		Delivery           float64 `json:"delivery" binding:"required"`
 	}
 
 	// Convertir los datos del request al struct CarvingRequest
-	if err := mapstructure.Decode(requestData, &CarvingRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del carvings: " + err.Error()})
+	if err := c.ShouldBindJSON(&CarvingRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Crea una instancia del modelo de carvings con los datos del CarvingRequest
 	carving := Model.Carvings{
 		Name:               CarvingRequest.Name,
@@ -66,8 +63,7 @@ func CreateCarving(c *gin.Context) {
 }
 
 func UpdateCarving(c *gin.Context) {
-	var requestData map[string]interface{}
-
+	var id = c.Param("id")
 	// Obtener los datos del carvings del cuerpo de la solicitud HTTP
 	var CarvingRequest struct {
 		Name               string  `json:"name" binding:"required"`
@@ -75,16 +71,15 @@ func UpdateCarving(c *gin.Context) {
 		Email              string  `json:"email" binding:"required"`
 		Phone              string  `json:"phone" binding:"required"`
 		Address            string  `json:"address" binding:"required"`
-		ProductionCapacity string  `json:"productionCapacity" binding:"required"`
+		ProductionCapacity uint64  `json:"productionCapacity" binding:"required"`
 		Delivery           float64 `json:"delivery" binding:"required"`
 	}
 
 	// Convertir los datos del request al struct CarvingRequest
-	if err := mapstructure.Decode(requestData, &CarvingRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del carvings: " + err.Error()})
+	if err := c.ShouldBindJSON(&CarvingRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Crea una instancia del modelo de carvings con los datos del CarvingRequest
 	carving := Model.Carvings{
 		Name:               CarvingRequest.Name,
@@ -96,12 +91,13 @@ func UpdateCarving(c *gin.Context) {
 		Delivery:           CarvingRequest.Delivery,
 	}
 
-	// Actualizar el carvings en la base de datos
-	if err := db.ObtenerDB().Save(&carving).Error; err != nil {
+	// Actualiza el carvings en la base de datos
+	if err := db.ObtenerDB().Model(&Model.Carvings{}).Where("id = ?", id).Updates(carving).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el carvings"})
 		return
 	}
 	c.JSON(http.StatusOK, carving)
+
 }
 
 func DeleteCarving(c *gin.Context) {

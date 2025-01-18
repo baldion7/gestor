@@ -4,7 +4,6 @@ import (
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"net/http"
 )
 
@@ -40,7 +39,6 @@ func DeleteColor(c *gin.Context) {
 }
 
 func CreateColor(c *gin.Context) {
-	var requestData map[string]interface{}
 
 	// Obtener los datos del color del cuerpo de la solicitud HTTP
 	var ColorRequest struct {
@@ -51,7 +49,7 @@ func CreateColor(c *gin.Context) {
 	}
 
 	// Convertir los datos del request al struct ColorRequest
-	if err := mapstructure.Decode(requestData, &ColorRequest); err != nil {
+	if err := c.ShouldBindJSON(&ColorRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del color: " + err.Error()})
 		return
 	}
@@ -69,10 +67,13 @@ func CreateColor(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear el color"})
 		return
 	}
+
+	c.JSON(http.StatusOK, color)
 }
 
 func UpdateColor(c *gin.Context) {
-	var requestData map[string]interface{}
+	// Obtener el ID del color de los parámetros de la URL
+	colorId := c.Param("id")
 
 	// Obtener los datos del color del cuerpo de la solicitud HTTP
 	var ColorRequest struct {
@@ -83,22 +84,29 @@ func UpdateColor(c *gin.Context) {
 	}
 
 	// Convertir los datos del request al struct ColorRequest
-	if err := mapstructure.Decode(requestData, &ColorRequest); err != nil {
+	if err := c.ShouldBindJSON(&ColorRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del color: " + err.Error()})
 		return
 	}
 
-	// Crea una instancia del modelo de color con los datos del ColorRequest
-	color := Model.Color{
-		Name:        ColorRequest.Name,
-		TotalPieces: ColorRequest.TotalPieces,
-		TotalPrice:  ColorRequest.TotalPrice,
-		CutOrderId:  ColorRequest.CutOrderId,
+	// Primero buscar el color existente
+	var existingColor Model.Color
+	if err := db.ObtenerDB().First(&existingColor, colorId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Color no encontrado"})
+		return
 	}
 
-	// Crea el color en la base de datos
-	if err := db.ObtenerDB().Save(&color).Error; err != nil {
+	// Actualizar los campos del color existente
+	existingColor.Name = ColorRequest.Name
+	existingColor.TotalPieces = ColorRequest.TotalPieces
+	existingColor.TotalPrice = ColorRequest.TotalPrice
+	existingColor.CutOrderId = ColorRequest.CutOrderId
+
+	// Actualizar el color en la base de datos
+	if err := db.ObtenerDB().Model(&existingColor).Updates(&existingColor).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el color"})
 		return
 	}
+
+	c.JSON(http.StatusOK, existingColor)
 }

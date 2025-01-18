@@ -1,48 +1,23 @@
 package Controller
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 )
 
 func GetReferences(c *gin.Context) {
-	var requestData map[string]interface{}
-
-	// Obtener los datos del tamaño del cuerpo de la solicitud HTTP
-	var ReferenceRequest struct {
-		Name              string  `json:"name" binding:"required"`
-		BrandId           uint64  `json:"brandId" binding:"required"`
-		CostPerProduction float64 `json:"costPerProduction" binding:"required"`
-		EnsemblePrice     float64 `json:"ensemblePrice" binding:"required"`
-		Description       string  `json:"description" binding:"required"`
-	}
-
-	// Convertir los datos del request al struct RolRequest
-	if err := mapstructure.Decode(requestData, &ReferenceRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del rol: " + err.Error()})
+	var references []Model.Reference
+	if err := db.ObtenerDB().Preload("Brand").Find(&references).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener los tamaños"})
 		return
 	}
-
-	// Crea una instancia del modelo de tamaño con los datos del RolRequest
-	role := Model.Reference{
-		Name:              ReferenceRequest.Name,
-		BrandId:           ReferenceRequest.BrandId,
-		CostPerProduction: ReferenceRequest.CostPerProduction,
-		EnsemblePrice:     ReferenceRequest.EnsemblePrice,
-	}
-
-	// Crea el tamaño en la base de datos
-	if err := db.ObtenerDB().Create(&role).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear el tamaño"})
-		return
-	}
-
-	// Devuelve un mensaje de éxito
-	c.JSON(http.StatusOK, gin.H{"msg": "referencia creado exitosamente"})
+	c.JSON(http.StatusOK, references)
 }
 
 func GetReferenceByID(c *gin.Context) {
@@ -55,7 +30,6 @@ func GetReferenceByID(c *gin.Context) {
 }
 
 func UpdateReference(c *gin.Context) {
-	var requestData map[string]interface{}
 	var reference Model.Reference
 
 	// Buscar el tamanho por ID
@@ -73,11 +47,10 @@ func UpdateReference(c *gin.Context) {
 	}
 
 	// Decodificar datos de la solicitud
-	if err := mapstructure.Decode(requestData, &ReferenceRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del tamanho: " + err.Error()})
+	if err := c.ShouldBindJSON(&ReferenceRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Actualizar los datos del tamanho
 	reference.Name = ReferenceRequest.Name
 	reference.BrandId = ReferenceRequest.BrandId
@@ -104,12 +77,10 @@ func DeleteReference(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar el tamanho"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Tamanho eliminado exitosamente"})
+	c.JSON(http.StatusOK, gin.H{"msg": "referencia eliminado exitosamente"})
 }
 
 func CreateReference(c *gin.Context) {
-	var requestData map[string]interface{}
-
 	// Obtener los datos del tamanho del cuerpo de la solicitud HTTP
 	var ReferenceRequest struct {
 		Name              string  `json:"name" binding:"required"`
@@ -118,9 +89,8 @@ func CreateReference(c *gin.Context) {
 		EnsemblePrice     float64 `json:"ensemblePrice" binding:"required"`
 	}
 
-	// Convertir los datos del request al struct ReferenceRequest
-	if err := mapstructure.Decode(requestData, &ReferenceRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del tamanho: " + err.Error()})
+	if err := c.ShouldBindJSON(&ReferenceRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
 
@@ -134,10 +104,33 @@ func CreateReference(c *gin.Context) {
 
 	// Crea el tamanho en la base de datos
 	if err := db.ObtenerDB().Create(&reference).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear el tamanho"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear la refrencia"})
 		return
 	}
 
 	// Devuelve un mensaje de éxito
 	c.JSON(http.StatusOK, gin.H{"msg": "tamanho creado exitosamente"})
+}
+
+func GetReferenceByBrand(c *gin.Context) {
+	// Convertir el parámetro BrandId a un entero
+	brandId, err := strconv.Atoi(c.Param("brandId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "El BrandId proporcionado no es válido"})
+		return
+	}
+
+	// Buscar las referencias asociadas al BrandId
+	var references []Model.Reference
+	if err := db.ObtenerDB().Where("brand_id = ?", brandId).Find(&references).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No se encontraron referencias para el BrandId proporcionado"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener las referencias"})
+		}
+		return
+	}
+
+	// Devolver las referencias en caso de éxito
+	c.JSON(http.StatusOK, references)
 }

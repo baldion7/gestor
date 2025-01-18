@@ -10,7 +10,8 @@ type Color struct {
 	TotalPieces uint64    `gorm:"not null"`
 	TotalPrice  float64   `gorm:"not null"`
 	CutOrderId  uint64    `gorm:"not null"`
-	CutOrder    *CutOrder `gorm:"foreignKey:CutOrderId;references:Id"`
+	CutSizes    []CutSize `gorm:"foreignKey:ColorId;references:Id;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
+	CutOrder    *CutOrder `gorm:"foreignKey:CutOrderId;references:Id;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }

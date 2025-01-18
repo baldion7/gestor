@@ -147,6 +147,46 @@ type ProductStock struct {
 
 }
 
+func GetAllProductsStockAll(c *gin.Context) {
+	var products []Model.Product
+
+	// Fetch all products without preload
+	if err := db.ObtenerDB().Preload("Movements").Order("id asc").Find(&products).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var stockResults []ProductStock
+
+	for _, product := range products {
+		var result ProductStock
+		result.Product = product
+		result.Movements = product.Movements
+
+		// Para productos que no son medidos en yardas
+		var entradas float64
+		var salidas float64
+
+		// Calcular entradas
+		db.ObtenerDB().Model(&Model.Movement{}).
+			Select("COALESCE(SUM(quantity), 0)").
+			Where("product_id = ? AND type = ?", product.Id, "entrada").
+			Scan(&entradas)
+
+		// Calcular salidas
+		db.ObtenerDB().Model(&Model.Movement{}).
+			Select("COALESCE(SUM(quantity), 0)").
+			Where("product_id = ? AND type = ?", product.Id, "salida").
+			Scan(&salidas)
+
+		result.CurrentStock = entradas - salidas
+
+		stockResults = append(stockResults, result)
+	}
+
+	c.JSON(http.StatusOK, stockResults)
+}
+
 func GetAllProductsStock(c *gin.Context) {
 	var products []Model.Product
 
@@ -175,7 +215,7 @@ func GetAllProductsStock(c *gin.Context) {
 			stockByCharacteristics := make(map[string]*StockDetail)
 
 			for _, movement := range movements {
-				// Convertir uint64 a string usando strconv
+				// Crear una clave única para las características
 				key := fmt.Sprintf("%s-%s-%s-%d",
 					product.Reference,
 					product.Color,
@@ -199,12 +239,17 @@ func GetAllProductsStock(c *gin.Context) {
 				}
 			}
 
-			// Convertir mapa a slice y filtrar stock positivo
+			// Convertir el mapa a slice y filtrar stock positivo
 			for _, detail := range stockByCharacteristics {
 				if detail.Stock > 0 {
 					result.StockDetails = append(result.StockDetails, *detail)
 					result.CurrentStock += float64(detail.Stock)
 				}
+			}
+
+			// Solo añadir productos con stock positivo
+			if result.CurrentStock > 0 {
+				stockResults = append(stockResults, result)
 			}
 
 		} else {
@@ -225,9 +270,18 @@ func GetAllProductsStock(c *gin.Context) {
 				Scan(&salidas)
 
 			result.CurrentStock = entradas - salidas
-		}
 
-		stockResults = append(stockResults, result)
+			// Solo añadir productos con stock positivo
+			if result.CurrentStock > 0 {
+				stockResults = append(stockResults, result)
+			}
+		}
+	}
+
+	// Verificar si hay productos en stock
+	if len(stockResults) == 0 {
+		c.JSON(http.StatusOK, stockResults)
+		return
 	}
 
 	c.JSON(http.StatusOK, stockResults)

@@ -6,5 +6,5 @@ type Reference struct {
 	BrandId           uint64  `gorm:"not null"`
 	CostPerProduction float64 `gorm:"not null"`
 	EnsemblePrice     float64 `gorm:"not null"`
-	Brand             *Brand  `gorm:"foreignKey:BrandId;references:Id"`
+	Brand             *Brand  `gorm:"foreignKey:BrandId;references:Id;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
 }

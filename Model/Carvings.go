@@ -11,7 +11,7 @@ type Carvings struct {
 	Email              string    `gorm:"not null"`
 	Phone              string    `gorm:"not null"`
 	Address            string    `gorm:"not null"`
-	ProductionCapacity string    `gorm:"not null"`
+	ProductionCapacity uint64    `gorm:"not null"`
 	Delivery           float64   `gorm:"not null"`
 	CreatedAt          time.Time `gorm:"autoCreateTime"`
 	UpdatedAt          time.Time `gorm:"autoUpdateTime"`

@@ -113,17 +113,9 @@ func UpdateSupplier(c *gin.Context) {
 func DeleteSupplier(c *gin.Context) {
 	var supplier Model.Suppliers
 
-	// Buscar el proveedor por ID
-	if err := db.ObtenerDB().First(&supplier, c.Param("id")).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener el proveedor"})
-		return
-	}
-
+	id := c.Param("id")
 	// Eliminar el proveedor
-	if err := db.ObtenerDB().Delete(&supplier).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar el proveedor"})
-		return
-	}
+	db.ObtenerDB().Where("id = ?", id).Delete(&supplier)
 
 	c.JSON(http.StatusOK, gin.H{"msg": "Proveedor eliminado exitosamente"})
 }

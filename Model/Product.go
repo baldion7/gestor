@@ -13,9 +13,9 @@ type Product struct {
 	Description string     `gorm:"not null"`
 	Price       float64    `gorm:"not null"`
 	SuppliersId uint64     `gorm:"not null"`
-	Movements   []Movement `gorm:"foreignKey:ProductId"`
 	Unitmeasure string     `gorm:"not null"`
-	Suppliers   *Suppliers `gorm:"foreignKey:SuppliersId;references:Id"`
+	Movements   []Movement `gorm:"foreignKey:ProductId;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
+	Suppliers   *Suppliers `gorm:"foreignKey:SuppliersId;references:Id;constraint:OnDelete:CASCADE;OnUpdate:CASCADE"`
 	CreatedAt   time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime"`
 }

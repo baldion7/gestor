@@ -4,7 +4,6 @@ import (
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"net/http"
 )
 
@@ -40,7 +39,6 @@ func DeleteBrand(c *gin.Context) {
 }
 
 func CreateBrand(c *gin.Context) {
-	var requestData map[string]interface{}
 
 	// Obtener los datos de la marca del cuerpo de la solicitud HTTP
 	var brandRequest struct {
@@ -52,11 +50,10 @@ func CreateBrand(c *gin.Context) {
 	}
 
 	// Convertir los datos del request al struct brandRequest
-	if err := mapstructure.Decode(requestData, &brandRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos de la marca: " + err.Error()})
+	if err := c.ShouldBindJSON(&brandRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Crea una instancia del modelo de marca con los datos de brandRequest
 	brand := Model.Brand{
 		Name:    brandRequest.Name,
@@ -77,7 +74,7 @@ func CreateBrand(c *gin.Context) {
 }
 
 func UpdateBrand(c *gin.Context) {
-	var requestData map[string]interface{}
+	var id = c.Param("id")
 
 	// Obtener los datos de la marca del cuerpo de la solicitud HTTP
 	var brandRequest struct {
@@ -89,11 +86,10 @@ func UpdateBrand(c *gin.Context) {
 	}
 
 	// Convertir los datos del request al struct brandRequest
-	if err := mapstructure.Decode(requestData, &brandRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos de la marca: " + err.Error()})
+	if err := c.ShouldBindJSON(&brandRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Crea una instancia del modelo de marca con los datos de brandRequest
 	brand := Model.Brand{
 		Name:    brandRequest.Name,
@@ -104,7 +100,7 @@ func UpdateBrand(c *gin.Context) {
 	}
 
 	// Actualiza la marca en la base de datos
-	if err := db.ObtenerDB().Save(&brand).Error; err != nil {
+	if err := db.ObtenerDB().Model(&Model.Brand{}).Where("id = ?", id).Updates(brand).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar la marca"})
 		return
 	}

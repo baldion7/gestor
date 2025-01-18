@@ -1,124 +1,257 @@
 package Controller
 
 import (
+	"fmt"
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"net/http"
 )
 
-func GetCutOrderByID(c *gin.Context) {
-	var cutSize Model.CutOrder
-	if err := db.ObtenerDB().First(&cutSize, c.Param("id")).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener el tamanho"})
-		return
-	}
-	c.JSON(http.StatusOK, cutSize)
+type CutOrder struct {
+	ID           uint          `json:"id"`
+	Colors       []Color       `json:"colors" gorm:"foreignKey:CutOrderID"`
+	Brand        Brand         `json:"brand" gorm:"foreignKey:BrandID"`
+	CutMovements []CutMovement `json:"cutMovements" gorm:"foreignKey:CutOrderID"`
 }
 
-func GetCutOrders(c *gin.Context) {
+type Color struct {
+	ID       uint      `json:"id"`
+	Name     string    `json:"name"`
+	CutSizes []CutSize `json:"cutSizes" gorm:"foreignKey:ColorID"`
+}
+
+type CutSize struct {
+	ID   uint   `json:"id"`
+	Size string `json:"size"`
+}
+
+type Brand struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+type CutMovement struct {
+	ID        uint       `json:"id"`
+	Movements []Movement `json:"movements" gorm:"foreignKey:CutMovementID"`
+}
+
+type Movement struct {
+	ID       uint      `json:"id"`
+	Type     string    `json:"type"`
+	Products []Product `json:"products" gorm:"foreignKey:MovementID"`
+}
+
+type Product struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+}
+
+func GetCutOrderByID(c *gin.Context) {
 	var cutOrders []Model.CutOrder
-	if err := db.ObtenerDB().Find(&cutOrders).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener los tamaños"})
+
+	result := db.ObtenerDB().
+		Preload("Colors").
+		Preload("Colors.CutSizes").
+		Preload("CutMovements").
+		Preload("CutMovements.Movement").
+		Preload("CutMovements.Movement.Product").
+		Preload("Carvings").
+		Preload("Reference").
+		Preload("Reference.Brand"). // Si necesitas la información de la marca de la referencia
+		First(&cutOrders, c.Param("id"))
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al obtener las órdenes de corte",
+			"details": result.Error.Error(),
+		})
 		return
 	}
-	c.JSON(http.StatusOK, cutOrders)
+
+	if len(cutOrders) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No se encontraron órdenes de corte",
+			"data":    []Model.CutOrder{},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Órdenes de corte obtenidas exitosamente",
+		"data":    cutOrders,
+	})
+}
+
+// Función para obtener las órdenes de corte
+func GetCutOrders(c *gin.Context) {
+	var cutOrders []Model.CutOrder
+
+	result := db.ObtenerDB().
+		Preload("Colors").
+		Preload("Colors.CutSizes").
+		Preload("CutMovements").
+		Preload("CutMovements.Movement").
+		Preload("CutMovements.Movement.Product").
+		Preload("Carvings").
+		Preload("Reference").
+		Preload("Reference.Brand"). // Si necesitas la información de la marca de la referencia
+		Find(&cutOrders)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Error al obtener las órdenes de corte",
+			"details": result.Error.Error(),
+		})
+		return
+	}
+
+	if len(cutOrders) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No se encontraron órdenes de corte",
+			"data":    []Model.CutOrder{},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Órdenes de corte obtenidas exitosamente",
+		"data":    cutOrders,
+	})
 }
 
 func CreateCutOrder(c *gin.Context) {
-	var requestData map[string]interface{}
-
-	// Obtener los datos del tamanho del cuerpo de la solicitud HTTP
-	var CutOrderRequest struct {
-		CreateBy      string  `json:"createBy" binding:"required"`
-		Quality       bool    `json:"quality" binding:"required"`
-		Arrival       bool    `json:"arrival" binding:"required"`
-		Delivered     bool    `json:"delivered" binding:"required"`
-		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
-		PricePerPiece float64 `json:"totalQuantity" binding:"required"`
-		TotalPrice    float64 `json:"totalPrice" binding:"required"`
-		Observations  string  `json:"observations" binding:"required"`
+	fmt.Print(c.Request.Body)
+	// Estructura para los datos de la solicitud
+	var cutOrderRequest struct {
+		CreatedBy     string  `json:"createdBy" binding:"required"`
+		Observations  string  `json:"observations" binding:"required"` // Changed JSON tag to match field name
 		ReferenceId   uint64  `json:"referenceId" binding:"required"`
-		CarvingsId    uint64  `json:"carvingsId"`
+		Average       string  `json:"average" binding:"required"`
+		Quality       bool    `json:"quality" `
+		Arrival       bool    `json:"arrival" `
+		Delivered     bool    `json:"delivered" `
+		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
+		PricePerPiece float64 `json:"pricePerPiece" binding:"required"`
+		TotalPrice    float64 `json:"totalPrice" binding:"required"`
 	}
 
-	// Convertir los datos del request al struct CutOrderRequest
-	if err := mapstructure.Decode(requestData, &CutOrderRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos de la talla: " + err.Error()})
-	}
-
-	// Crea una instancia del modelo de tamanho con los datos del CutOrderRequest
-	cutOrder := Model.CutOrder{
-		CreateBy:      CutOrderRequest.CreateBy,
-		Quality:       CutOrderRequest.Quality,
-		Arrival:       CutOrderRequest.Arrival,
-		Delivered:     CutOrderRequest.Delivered,
-		TotalPieces:   CutOrderRequest.TotalPieces,
-		PricePerPiece: CutOrderRequest.PricePerPiece,
-		TotalPrice:    CutOrderRequest.TotalPrice,
-		Observations:  CutOrderRequest.Observations,
-		ReferenceId:   CutOrderRequest.ReferenceId,
-		CarvingsId:    CutOrderRequest.CarvingsId,
-	}
-
-	// Crea el tamanho en la base de datos
-	if err := db.ObtenerDB().Create(&cutOrder).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear el tamanho"})
+	// Parsear los datos de la solicitud al struct
+	if err := c.ShouldBindJSON(&cutOrderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Devuelve un mensaje de éxito
-	c.JSON(http.StatusOK, gin.H{"msg": "talla creado exitosamente"})
+	// Crear la instancia del modelo CutOrder
+	cutOrder := Model.CutOrder{
+		CreateBy:      cutOrderRequest.CreatedBy,
+		Observations:  cutOrderRequest.Observations,
+		ReferenceId:   cutOrderRequest.ReferenceId,
+		Average:       cutOrderRequest.Average,
+		Quality:       cutOrderRequest.Quality,
+		Arrival:       cutOrderRequest.Arrival,
+		Delivered:     cutOrderRequest.Delivered,
+		TotalPieces:   cutOrderRequest.TotalPieces,
+		PricePerPiece: cutOrderRequest.PricePerPiece,
+		TotalPrice:    cutOrderRequest.TotalPrice,
+	}
+
+	// Guardar la orden en la base de datos
+	if err := db.ObtenerDB().Create(&cutOrder).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear la orden: " + err.Error()})
+		return
+	}
+
+	// Devolver una respuesta exitosa con los datos creados
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Orden de corte creada exitosamente",
+		"data":    cutOrder,
+	})
 }
 
 func UpdateCutOrder(c *gin.Context) {
-	var requestData map[string]interface{}
-
-	// Obtener los datos del tamanho del cuerpo de la solicitud HTTP
-	var CutOrderRequest struct {
-		CreateBy      string  `json:"createBy" binding:"required"`
-		Quality       bool    `json:"quality" binding:"required"`
-		Arrival       bool    `json:"arrival" binding:"required"`
-		Delivered     bool    `json:"delivered" binding:"required"`
-		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
-		PricePerPiece float64 `json:"totalQuantity" binding:"required"`
-		TotalPrice    float64 `json:"totalPrice" binding:"required"`
+	// Estructura para los datos de la solicitud
+	var cutOrderRequest struct {
+		CreatedBy     string  `json:"createdBy" binding:"required"`
 		Observations  string  `json:"observations" binding:"required"`
 		ReferenceId   uint64  `json:"referenceId" binding:"required"`
-		CarvingsId    uint64  `json:"carvingsId"`
+		Average       string  `json:"average" binding:"required"`
+		Quality       bool    `json:"quality"`
+		Arrival       bool    `json:"arrival"`
+		Delivered     bool    `json:"delivered"`
+		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
+		PricePerPiece float64 `json:"pricePerPiece" binding:"required"`
+		TotalPrice    float64 `json:"totalPrice" binding:"required"`
+		CarvingsId    *uint64 `json:"carvingsId"` // Campo opcional
 	}
 
-	// Convertir los datos del request al struct CutOrderRequest
-	if err := mapstructure.Decode(requestData, &CutOrderRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos de la talla: " + err.Error()})
+	// Parsear los datos de la solicitud al struct
+	if err := c.ShouldBindJSON(&cutOrderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
-	// Buscar el tamanho por ID
+	// Buscar la orden de corte por ID
 	var cutOrder Model.CutOrder
 	if err := db.ObtenerDB().First(&cutOrder, c.Param("id")).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener a talla"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orden de corte no encontrada"})
 		return
 	}
 
-	// Actualizar los datos del tamanho
-	cutOrder.CreateBy = CutOrderRequest.CreateBy
-	cutOrder.Quality = CutOrderRequest.Quality
-	cutOrder.Arrival = CutOrderRequest.Arrival
-	cutOrder.Delivered = CutOrderRequest.Delivered
-	cutOrder.TotalPieces = CutOrderRequest.TotalPieces
-	cutOrder.PricePerPiece = CutOrderRequest.PricePerPiece
-	cutOrder.TotalPrice = CutOrderRequest.TotalPrice
-	cutOrder.Observations = CutOrderRequest.Observations
-	cutOrder.ReferenceId = CutOrderRequest.ReferenceId
-	cutOrder.CarvingsId = CutOrderRequest.CarvingsId
+	// Preparar el mapa de actualización
+	updates := map[string]interface{}{
+		"create_by":       cutOrderRequest.CreatedBy,
+		"quality":         cutOrderRequest.Quality,
+		"arrival":         cutOrderRequest.Arrival,
+		"average":         cutOrderRequest.Average,
+		"delivered":       cutOrderRequest.Delivered,
+		"total_pieces":    cutOrderRequest.TotalPieces,
+		"price_per_piece": cutOrderRequest.PricePerPiece,
+		"total_price":     cutOrderRequest.TotalPrice,
+		"observations":    cutOrderRequest.Observations,
+		"reference_id":    cutOrderRequest.ReferenceId,
+	}
 
-	// Guardar los cambios en la base de datos
+	// Solo incluir CarvingsId en la actualización si se proporciona en la solicitud
+	if cutOrderRequest.CarvingsId != nil {
+		updates["carvings_id"] = *cutOrderRequest.CarvingsId
+	}
+
+	// Actualizar usando el mapa de campos
+	if err := db.ObtenerDB().Model(&cutOrder).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar la orden de corte"})
+		return
+	}
+
+	// Responder con éxito
+	c.JSON(http.StatusOK, gin.H{"msg": "Orden de corte actualizada exitosamente"})
+}
+
+func UpdateCutOrderCarving(c *gin.Context) {
+	// Estructura para los datos de la solicitud
+	var cutOrderRequest struct {
+		CarvingsId uint64 `json:"carvingsId" binding:"required"`
+	}
+
+	// Parsear los datos de la solicitud al struct
+	if err := c.ShouldBindJSON(&cutOrderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Buscar la orden de corte por ID
+	var cutOrder Model.CutOrder
+	if err := db.ObtenerDB().First(&cutOrder, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orden de corte no encontrada"})
+		return
+	}
+
+	// Actualizar el campo CarvingsId
+	cutOrder.CarvingsId = cutOrderRequest.CarvingsId
 	if err := db.ObtenerDB().Save(&cutOrder).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar la talla"})
-		return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar la orden de corte"})
 	}
 
-	// Devuelve un mensaje de éxito
-	c.JSON(http.StatusOK, gin.H{"msg": "talla actualizado exitosamente"})
+	// Responder con válido
+	c.JSON(http.StatusOK, gin.H{"msg": "CarvingsId actualizado exitosamente"})
 }
