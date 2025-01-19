@@ -7,7 +7,7 @@ import (
 
 func SetupRoutes(router *gin.Engine) {
 
-	router.GET("/api/users", Controller.GetUsers)
+	router.GET("/api/user", Controller.GetUsers)
 	router.GET("/api/user/:id", Controller.GetUserByID)
 	router.POST("/api/user", Controller.CreateUser)
 	router.PUT("/api/user/:id", Controller.UpdateUser)
@@ -86,5 +86,7 @@ func SetupRoutes(router *gin.Engine) {
 	router.POST("/api/brand", Controller.CreateBrand)
 	router.PUT("/api/brand/:id", Controller.UpdateBrand)
 	router.DELETE("/api/brand/:id", Controller.DeleteBrand)
+
+	router.POST("/api/login", Controller.Login)
 
 }

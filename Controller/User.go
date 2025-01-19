@@ -4,14 +4,12 @@ import (
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 )
 
 // CreateUser crea un usuario en la base de datos
 func CreateUser(c *gin.Context) {
-	var requestData map[string]interface{}
 	// Obtener los datos del usuario del cuerpo de la solicitud HTTP
 	var UserRequest struct {
 		Name     string `json:"name" binding:"required"`
@@ -21,11 +19,10 @@ func CreateUser(c *gin.Context) {
 	}
 
 	// Convertir los datos del request al struct UserRequest
-	if err := mapstructure.Decode(requestData, &UserRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del usuario" + err.Error()})
+	if err := c.ShouldBindJSON(&UserRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
-
 	// Encripta la contraseña;
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(UserRequest.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -53,7 +50,7 @@ func CreateUser(c *gin.Context) {
 // GetUsers obtiene todos los usuarios de la base de datos
 func GetUsers(c *gin.Context) {
 	var users []Model.User
-	if err := db.ObtenerDB().Preload("Roles").Find(&users).Error; err != nil {
+	if err := db.ObtenerDB().Preload("Role").Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener los usuarios"})
 		return
 	}
@@ -63,7 +60,7 @@ func GetUsers(c *gin.Context) {
 // GetUser obtiene un usuario de la base de datos
 func GetUserByID(c *gin.Context) {
 	var user Model.User
-	if err := db.ObtenerDB().First(&user, c.Param("id")).Error; err != nil {
+	if err := db.ObtenerDB().Preload("Role").First(&user, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener el usuario"})
 		return
 	}
@@ -72,29 +69,31 @@ func GetUserByID(c *gin.Context) {
 
 // UpdateUser actualiza un usuario en la base de datos
 func UpdateUser(c *gin.Context) {
-	var requestData map[string]interface{}
+	var id = c.Param("id")
+	var UserRequest struct {
+		Name     string `json:"name" binding:"required"`
+		Rol      uint64 `json:"rol" binding:"required"`
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&UserRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
+		return
+	}
 	var user Model.User
-	if err := db.ObtenerDB().First(&user, c.Param("id")).Error; err != nil {
+	if err := db.ObtenerDB().First(&user, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener el usuario"})
 		return
 	}
-	var UserRequest struct {
-		Name string `json:"name" binding:"required"`
-		Rol  uint64 `json:"rol" binding:"required"`
-	}
-	if err := mapstructure.Decode(requestData, &UserRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos del usuario"})
-		return
-	}
-
 	user.Name = UserRequest.Name
 	user.RoleId = UserRequest.Rol
-
+	user.Password = UserRequest.Password
 	if err := db.ObtenerDB().Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el usuario"})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{"msg": "Usuario actualizado exitosamente"})
 }
 
 // DeleteUser elimina un usuario de la base de datos

@@ -72,8 +72,11 @@ func InsertDataInit() {
 
 // insertRoles inserta roles iniciales
 func insertRoles() {
-	role := model.Role{Name: "Administrador", Description: "Permisos totales"}
-	db.FirstOrCreate(&role, model.Role{Name: role.Name})
+	Role := []string{"ADMIN", "CALIDAD", "DESPACHO", "CORTE"}
+	for _, rol := range Role {
+		role := model.Role{Name: rol}
+		db.FirstOrCreate(&role, model.Role{Name: rol, Description: rol})
+	}
 }
 
 // insertUser inserta un usuario inicial
@@ -95,4 +98,5 @@ func inserterTablas() {
 		size := model.Sizes{Name: talla}
 		db.FirstOrCreate(&size, model.Sizes{Name: talla})
 	}
+
 }
