@@ -8,7 +8,6 @@ type CutOrder struct {
 	Quality       bool           `gorm:"not null"`
 	Arrival       bool           `gorm:"not null"`
 	Delivered     bool           `gorm:"not null"`
-	Average       string         `gorm:"default:null"`
 	TotalPieces   uint64         `gorm:"not null"`
 	PricePerPiece float64        `gorm:"not null"`
 	TotalPrice    float64        `gorm:"not null"`
