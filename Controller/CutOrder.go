@@ -1,7 +1,6 @@
 package Controller
 
 import (
-	"fmt"
 	db "gestor/Config/database"
 	Model "gestor/Model"
 	"github.com/gin-gonic/gin"
@@ -121,7 +120,6 @@ func GetCutOrders(c *gin.Context) {
 }
 
 func CreateCutOrder(c *gin.Context) {
-	fmt.Print(c.Request.Body)
 	// Estructura para los datos de la solicitud
 	var cutOrderRequest struct {
 		CreatedBy     string  `json:"createdBy" binding:"required"`
@@ -129,7 +127,6 @@ func CreateCutOrder(c *gin.Context) {
 		ReferenceId   uint64  `json:"referenceId" binding:"required"`
 		Average       string  `json:"average" binding:"required"`
 		Quality       bool    `json:"quality" `
-		Arrival       bool    `json:"arrival" `
 		Delivered     bool    `json:"delivered" `
 		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
 		PricePerPiece float64 `json:"pricePerPiece" binding:"required"`
@@ -147,9 +144,7 @@ func CreateCutOrder(c *gin.Context) {
 		CreateBy:      cutOrderRequest.CreatedBy,
 		Observations:  cutOrderRequest.Observations,
 		ReferenceId:   cutOrderRequest.ReferenceId,
-		Average:       cutOrderRequest.Average,
 		Quality:       cutOrderRequest.Quality,
-		Arrival:       cutOrderRequest.Arrival,
 		Delivered:     cutOrderRequest.Delivered,
 		TotalPieces:   cutOrderRequest.TotalPieces,
 		PricePerPiece: cutOrderRequest.PricePerPiece,
@@ -175,7 +170,6 @@ func UpdateCutOrder(c *gin.Context) {
 		CreatedBy     string  `json:"createdBy" binding:"required"`
 		Observations  string  `json:"observations" binding:"required"`
 		ReferenceId   uint64  `json:"referenceId" binding:"required"`
-		Average       string  `json:"average" binding:"required"`
 		Quality       bool    `json:"quality"`
 		Arrival       bool    `json:"arrival"`
 		Delivered     bool    `json:"delivered"`
@@ -203,7 +197,6 @@ func UpdateCutOrder(c *gin.Context) {
 		"create_by":       cutOrderRequest.CreatedBy,
 		"quality":         cutOrderRequest.Quality,
 		"arrival":         cutOrderRequest.Arrival,
-		"average":         cutOrderRequest.Average,
 		"delivered":       cutOrderRequest.Delivered,
 		"total_pieces":    cutOrderRequest.TotalPieces,
 		"price_per_piece": cutOrderRequest.PricePerPiece,

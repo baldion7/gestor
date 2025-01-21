@@ -43,6 +43,7 @@ func CreateColor(c *gin.Context) {
 	// Obtener los datos del color del cuerpo de la solicitud HTTP
 	var ColorRequest struct {
 		Name        string  `json:"name" binding:"required"`
+		Average     string  `json:"average" binding:"required"`
 		TotalPieces uint64  `json:"totalPieces" binding:"required"`
 		TotalPrice  float64 `json:"totalPrice" binding:"required"`
 		CutOrderId  uint64  `json:"cutOrderId" binding:"required"`
@@ -57,6 +58,7 @@ func CreateColor(c *gin.Context) {
 	// Crea una instancia del modelo de color con los datos del ColorRequest
 	color := Model.Color{
 		Name:        ColorRequest.Name,
+		Average:     ColorRequest.Average,
 		TotalPieces: ColorRequest.TotalPieces,
 		TotalPrice:  ColorRequest.TotalPrice,
 		CutOrderId:  ColorRequest.CutOrderId,
@@ -78,6 +80,7 @@ func UpdateColor(c *gin.Context) {
 	// Obtener los datos del color del cuerpo de la solicitud HTTP
 	var ColorRequest struct {
 		Name        string  `json:"name" binding:"required"`
+		Average     string  `json:"average" binding:"required"`
 		TotalPieces uint64  `json:"totalPieces" binding:"required"`
 		TotalPrice  float64 `json:"totalPrice" binding:"required"`
 		CutOrderId  uint64  `json:"cutOrderId" binding:"required"`
@@ -98,6 +101,7 @@ func UpdateColor(c *gin.Context) {
 
 	// Actualizar los campos del color existente
 	existingColor.Name = ColorRequest.Name
+	existingColor.Average = ColorRequest.Average
 	existingColor.TotalPieces = ColorRequest.TotalPieces
 	existingColor.TotalPrice = ColorRequest.TotalPrice
 	existingColor.CutOrderId = ColorRequest.CutOrderId
