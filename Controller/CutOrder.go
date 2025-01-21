@@ -125,7 +125,6 @@ func CreateCutOrder(c *gin.Context) {
 		CreatedBy     string  `json:"createdBy" binding:"required"`
 		Observations  string  `json:"observations" binding:"required"` // Changed JSON tag to match field name
 		ReferenceId   uint64  `json:"referenceId" binding:"required"`
-		Average       string  `json:"average" binding:"required"`
 		Quality       bool    `json:"quality" `
 		Delivered     bool    `json:"delivered" `
 		TotalPieces   uint64  `json:"totalPieces" binding:"required"`
