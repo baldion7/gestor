@@ -33,7 +33,7 @@ func CreateCarving(c *gin.Context) {
 		Contact            string  `json:"contact" binding:"required"`
 		Email              string  `json:"email" binding:"required"`
 		Phone              string  `json:"phone" binding:"required"`
-		Address            string  `json:"address" binding:"required"`
+		Address            string  `json:"address"`
 		ProductionCapacity uint64  `json:"productionCapacity" binding:"required"`
 		Delivery           float64 `json:"delivery" binding:"required"`
 	}

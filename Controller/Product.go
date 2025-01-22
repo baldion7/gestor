@@ -31,6 +31,7 @@ func GetProductByID(c *gin.Context) {
 
 // CreateProduct crea un producto en la base de datos
 func CreateProduct(c *gin.Context) {
+	fmt.Println(c.Request.Body)
 
 	// Obtener los datos del producto del cuerpo de la solicitud HTTP
 	var ProductRequest struct {
@@ -39,7 +40,7 @@ func CreateProduct(c *gin.Context) {
 		Color       string  `json:"color" binding:"required"`
 		Size        string  `json:"size" binding:"required"`
 		Description string  `json:"description" binding:"required"`
-		Price       float64 `json:"price" binding:"required"`
+		Price       float64 `json:"price" `
 		SuppliersId uint64  `json:"suppliersId" binding:"required"`
 		Unitmeasure string  `json:"unitmeasure" binding:"required"`
 	}
