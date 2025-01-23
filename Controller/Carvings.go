@@ -35,7 +35,7 @@ func CreateCarving(c *gin.Context) {
 		Phone              string  `json:"phone" binding:"required"`
 		Address            string  `json:"address"`
 		ProductionCapacity uint64  `json:"productionCapacity" binding:"required"`
-		Delivery           float64 `json:"delivery" binding:"required"`
+		Delivery           float64 `json:"delivery"`
 	}
 
 	// Convertir los datos del request al struct CarvingRequest
@@ -72,7 +72,7 @@ func UpdateCarving(c *gin.Context) {
 		Phone              string  `json:"phone" binding:"required"`
 		Address            string  `json:"address" binding:"required"`
 		ProductionCapacity uint64  `json:"productionCapacity" binding:"required"`
-		Delivery           float64 `json:"delivery" binding:"required"`
+		Delivery           float64 `json:"delivery" `
 	}
 
 	// Convertir los datos del request al struct CarvingRequest
