@@ -58,10 +58,12 @@ func SetupRoutes(router *gin.Engine) {
 	router.DELETE("/api/cut-sizes/color/:id", Controller.DeleteCutSizeForColor)
 
 	router.GET("/api/cut-orders", Controller.GetCutOrders)
+	router.PUT("/api/cut-orders-observations/:id", Controller.UpdateCutOrderObservations)
 	router.GET("/api/cut-orders/:id", Controller.GetCutOrderByID)
 	router.POST("/api/cut-orders", Controller.CreateCutOrder)
 	router.PUT("/api/cut-orders/:id", Controller.UpdateCutOrder)
 	router.PUT("/api/cut-orders-carving/:id", Controller.UpdateCutOrderCarving)
+	router.PUT("/api/cut-orders/finish/:id", Controller.UpdateCutOrderFinish)
 
 	router.GET("/api/cut-movements", Controller.GetCutMovements)
 	router.GET("/api/cut-movements/:id", Controller.GetCutMovementByID)
@@ -86,6 +88,9 @@ func SetupRoutes(router *gin.Engine) {
 	router.POST("/api/brand", Controller.CreateBrand)
 	router.PUT("/api/brand/:id", Controller.UpdateBrand)
 	router.DELETE("/api/brand/:id", Controller.DeleteBrand)
+
+	router.POST("/api/dispatch", Controller.CreateDispatch)
+	router.GET("/api/dispatch", Controller.GetDispatches)
 
 	router.POST("/api/login", Controller.Login)
 

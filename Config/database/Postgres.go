@@ -26,7 +26,7 @@ func ConfigurarDB() error {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME_DATABASE")
 	dbPort := os.Getenv("DB_PORT")
-	dsn := "host=" + dbHost + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " port=" + dbPort + " sslmode=disable"
+	dsn := "host=" + dbHost + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " port=" + dbPort
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return err
@@ -52,6 +52,8 @@ func AutomigrarDB() {
 		&model.Sizes{},
 		&model.Suppliers{},
 		&model.User{},
+		&model.Dispatch{},
+		&model.DispatchCutOrders{},
 	)
 	if err != nil {
 		log.Fatal(err)

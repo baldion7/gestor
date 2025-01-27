@@ -247,3 +247,53 @@ func UpdateCutOrderCarving(c *gin.Context) {
 	// Responder con válido
 	c.JSON(http.StatusOK, gin.H{"msg": "CarvingsId actualizado exitosamente"})
 }
+
+func UpdateCutOrderObservations(c *gin.Context) {
+	var id = c.Param("id")
+	var cutOrderRequest struct {
+		Observations string `json:"observation" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&cutOrderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var cutOrder Model.CutOrder
+	if err := db.ObtenerDB().First(&cutOrder, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orden de corte no encontrada"})
+		return
+	}
+
+	cutOrder.Observations2 = cutOrderRequest.Observations
+	if err := db.ObtenerDB().Save(&cutOrder).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar la orden de corte"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"msg": "Observaciones actualizadas exitosamente"})
+}
+
+func UpdateCutOrderFinish(c *gin.Context) {
+	var id = c.Param("id")
+	var cutOrderRequest struct {
+		Finish bool `json:"finish" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&cutOrderRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var cutOrder Model.CutOrder
+	if err := db.ObtenerDB().First(&cutOrder, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Orden de corte no encontrada"})
+		return
+	}
+
+	cutOrder.Finish = cutOrderRequest.Finish
+	if err := db.ObtenerDB().Save(&cutOrder).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar la orden de corte"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"msg": "Orden de corte actualizada exitosamente"})
+}
